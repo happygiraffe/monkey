@@ -17,8 +17,14 @@ const (
 	INT   Type = "INT"   // 123456
 
 	// Operators
-	ASSIGN Type = "="
-	PLUS   Type = "+"
+	ASSIGN   Type = "="
+	PLUS     Type = "+"
+	MINUS    Type = "-"
+	BANG     Type = "!"
+	ASTERISK Type = "*"
+	SLASH    Type = "/"
+	LT       Type = "<"
+	GT       Type = ">"
 
 	// DELIMITERS
 	COMMA     Type = ","
@@ -36,7 +42,7 @@ const (
 )
 
 var keywords = map[string]Type{
-	"fn": FUNCTION,
+	"fn":  FUNCTION,
 	"let": LET,
 }
 
