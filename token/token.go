@@ -1,36 +1,36 @@
 // Package token represents all the possible tokens that the lexer can use.
 package token
 
-type TokenType string
+type Type string
 
 type Token struct {
-	Type    TokenType
+	Type    Type
 	Literal string
 }
 
 const (
-	ILLEGAL TokenType = "ILLEGAL"
-	EOF     TokenType = "EOF"
+	ILLEGAL Type = "ILLEGAL"
+	EOF     Type = "EOF"
 
 	// Identifiers & literals.
-	IDENT TokenType = "IDENT" // add, foobar, x, y, ‥
-	INT   TokenType = "INT"   // 123456
+	IDENT Type = "IDENT" // add, foobar, x, y, ‥
+	INT   Type = "INT"   // 123456
 
 	// Operators
-	ASSIGN TokenType = "="
-	PLUS   TokenType = "+"
+	ASSIGN Type = "="
+	PLUS   Type = "+"
 
 	// DELIMITERS
-	COMMA     TokenType = ","
-	SEMICOLON TokenType = ";"
+	COMMA     Type = ","
+	SEMICOLON Type = ";"
 
-	LPAREN TokenType = "("
-	RPAREN TokenType = ")"
+	LPAREN Type = "("
+	RPAREN Type = ")"
 
-	LBRACE TokenType = "{"
-	RBRACE TokenType = "}"
+	LBRACE Type = "{"
+	RBRACE Type = "}"
 
 	// Keywords
-	FUNCTION TokenType = "FUNCTION"
-	LET      TokenType = "LET"
+	FUNCTION Type = "FUNCTION"
+	LET      Type = "LET"
 )

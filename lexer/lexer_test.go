@@ -9,7 +9,7 @@ func TestNextToken(t *testing.T) {
 	input := `=+(){},;`
 
 	tests := []struct {
-		want    token.TokenType
+		want    token.Type
 		wantLit string
 	}{
 		{token.ASSIGN, "="},
