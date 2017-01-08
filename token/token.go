@@ -39,6 +39,11 @@ const (
 	// Keywords
 	FUNCTION Type = "FUNCTION"
 	LET      Type = "LET"
+	TRUE     Type = "TRUE"
+	FALSE    Type = "FALSE"
+	IF       Type = "IF"
+	ELSE     Type = "ELSE"
+	RETURN   Type = "RETURN"
 )
 
 var keywords = map[string]Type{
