@@ -34,6 +34,8 @@ func (l *Lexer) readChar() {
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
+	l.skipWhitespace()
+
 	switch l.ch {
 	case '=':
 		tok = token.Token{Type: token.ASSIGN, Literal: string(l.ch)}
@@ -51,10 +53,57 @@ func (l *Lexer) NextToken() token.Token {
 		tok = token.Token{Type: token.COMMA, Literal: string(l.ch)}
 	case '+':
 		tok = token.Token{Type: token.PLUS, Literal: string(l.ch)}
-	default:
+	case 0:
 		tok = token.Token{Type: token.EOF}
+	default:
+		if isLetter(l.ch) {
+			ident := l.readIdentifier()
+			tok.Literal = ident
+			tok.Type = token.Lookup(ident)
+			return tok // we have already called readChar()
+		} else if isDigit(l.ch) {
+			tok.Type = token.INT
+			tok.Literal = l.readNumber()
+			return tok // we have already called readChar()
+		}
+		tok = token.Token{Type: token.ILLEGAL, Literal: string(l.ch)}
 	}
 
 	l.readChar()
 	return tok
+}
+
+func (l *Lexer) skipWhitespace() {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
+		l.readChar()
+	}
+}
+
+// readIdentifier advances through the input until we've read a complete
+// identifier.
+func (l *Lexer) readIdentifier() string {
+	pos := l.pos
+	for isLetter(l.ch) {
+		l.readChar()
+	}
+	return l.input[pos:l.pos]
+}
+
+func isLetter(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' ||
+		'A' <= ch && ch <= 'Z' ||
+		ch == '_'
+}
+
+// Advance through the next number (positive integers only).
+func (l *Lexer) readNumber() string {
+	pos := l.pos
+	for isDigit(l.ch) {
+		l.readChar()
+	}
+	return l.input[pos:l.pos]
+}
+
+func isDigit(ch byte) bool {
+	return '0' <= ch && ch <= '9'
 }
