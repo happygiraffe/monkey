@@ -21,6 +21,9 @@ if (5 < 10) {
 } else {
   return false;
 }
+
+10 == 10;
+10 != 9;
 `
 
 	tests := []struct {
@@ -100,6 +103,16 @@ if (5 < 10) {
 		{token.SEMICOLON, ";"},
 		{token.RBRACE, "}"},
 
+		{token.INT, "10"},
+		{token.EQ, "=="},
+		{token.INT, "10"},
+		{token.SEMICOLON, ";"},
+
+		{token.INT, "10"},
+		{token.NE, "!="},
+		{token.INT, "9"},
+		{token.SEMICOLON, ";"},
+
 		{token.EOF, ""},
 	}
 
@@ -107,7 +120,7 @@ if (5 < 10) {
 	for i, tc := range tests {
 		tok := lex.NextToken()
 		if tok.Type != tc.want {
-			t.Fatalf("%d. token type = %v, want %v", i, tok.Type, tc.want)
+			t.Fatalf("%d. token type = %q, want %q", i, tok.Type, tc.want)
 		}
 		if tok.Literal != tc.wantLit {
 			t.Fatalf("%d. token literal = %q, want %q", i, tok.Literal, tc.wantLit)

@@ -21,6 +21,7 @@ func New(input string) *Lexer {
 	return l
 }
 
+// readChar consumes the next character, placing it in the ch field..
 func (l *Lexer) readChar() {
 	if l.readPos >= len(l.input) {
 		l.ch = 0
@@ -31,6 +32,15 @@ func (l *Lexer) readChar() {
 	l.readPos++
 }
 
+// peekChar returns the next character that would be read, without consuming it.
+func (l *Lexer) peekChar() byte {
+	if l.readPos >= len(l.input) {
+		return 0
+	} else {
+		return l.input[l.readPos]
+	}
+}
+
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -38,7 +48,13 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.ch {
 	case '=':
-		tok = token.Token{Type: token.ASSIGN, Literal: string(l.ch)}
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.EQ, Literal: string(ch) + string(l.ch)}
+		} else {
+			tok = token.Token{Type: token.ASSIGN, Literal: string(l.ch)}
+		}
 	case ';':
 		tok = token.Token{Type: token.SEMICOLON, Literal: string(l.ch)}
 	case '(':
@@ -60,7 +76,13 @@ func (l *Lexer) NextToken() token.Token {
 	case '/':
 		tok = token.Token{Type: token.SLASH, Literal: string(l.ch)}
 	case '!':
-		tok = token.Token{Type: token.BANG, Literal: string(l.ch)}
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.NE, Literal: string(ch) + string(l.ch)}
+		} else {
+			tok = token.Token{Type: token.BANG, Literal: string(l.ch)}
+		}
 	case '<':
 		tok = token.Token{Type: token.LT, Literal: string(l.ch)}
 	case '>':

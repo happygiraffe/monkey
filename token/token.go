@@ -25,6 +25,8 @@ const (
 	SLASH    Type = "/"
 	LT       Type = "<"
 	GT       Type = ">"
+	EQ       Type = "=="
+	NE       Type = "!="
 
 	// DELIMITERS
 	COMMA     Type = ","
