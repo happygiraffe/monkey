@@ -22,6 +22,18 @@ type Expression interface {
 	expressionNode()
 }
 
+// Program is the top-level program.
+type Program struct {
+	Statements []Statement
+}
+
+func (p *Program) TokenLiteral() string {
+	if len(p.Statements) == 0 {
+		return ""
+	}
+	return p.Statements[0].TokenLiteral()
+}
+
 // LetStatement is a "let x = y" statement.
 type LetStatement struct {
 	Token token.Token
