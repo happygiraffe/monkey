@@ -67,3 +67,28 @@ func checkParseErrors(t *testing.T, p *Parser) {
 	}
 	t.FailNow()
 }
+
+func TestReturnStatements(t *testing.T) {
+	input := `
+    return 5;
+    return 10;
+	  return 993322;
+	`
+	l := lexer.New(input)
+	p := New(l)
+	prog := p.Parse()
+	checkParseErrors(t, p)
+	if got, want := len(prog.Statements), 3; got != want {
+		t.Fatalf("len(prog.Statements) = %d, want %d", got, want)
+	}
+	for _, stmt := range prog.Statements {
+		retStmt, ok := stmt.(*ast.ReturnStatement)
+		if !ok {
+			t.Errorf("stmt is a %T, want *ast.ReturnStatement", stmt)
+			continue
+		}
+		if got, want := retStmt.TokenLiteral(), "return"; got != want {
+			t.Errorf("stmt.TokenLiteral() = %q, want %q", got, want)
+		}
+	}
+}
