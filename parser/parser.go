@@ -6,6 +6,7 @@ import (
 	"monkey/ast"
 	"monkey/lexer"
 	"monkey/token"
+	"strconv"
 )
 
 const (
@@ -38,6 +39,7 @@ func New(l *lexer.Lexer) *Parser {
 		infixParseFns:  make(map[token.Type]infixParseFn),
 	}
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
+	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 
 	// Read two tokens so curTok and peekTok are ready to use.
 	p.nextToken()
@@ -160,4 +162,16 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 
 func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+}
+
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	lit := &ast.IntegerLiteral{Token: p.curTok}
+	val, err := strconv.ParseInt(p.curTok.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q: %v", p.curTok.Literal, err)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+	lit.Value = val
+	return lit
 }
