@@ -8,16 +8,36 @@ import (
 	"monkey/token"
 )
 
+const (
+	LOWEST      int = iota + 1
+	EQUALS          // ==
+	LESSGREATER     // > or <
+	SUM             // +
+	PRODUCT         // *
+	PREFIX          // -X or !X
+	CALL            //myFunc(X)
+)
+
+type prefixParseFn func() ast.Expression
+type infixParseFn func(ast.Expression) ast.Expression
+
 // Parser allows parsing the monkey language.
 type Parser struct {
-	l       *lexer.Lexer
-	curTok  token.Token
-	peekTok token.Token
-	errors  []string
+	l              *lexer.Lexer
+	curTok         token.Token
+	peekTok        token.Token
+	errors         []string
+	prefixParseFns map[token.Type]prefixParseFn
+	infixParseFns  map[token.Type]infixParseFn
 }
 
 func New(l *lexer.Lexer) *Parser {
-	p := &Parser{l: l}
+	p := &Parser{
+		l:              l,
+		prefixParseFns: make(map[token.Type]prefixParseFn),
+		infixParseFns:  make(map[token.Type]infixParseFn),
+	}
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
 
 	// Read two tokens so curTok and peekTok are ready to use.
 	p.nextToken()
@@ -28,6 +48,14 @@ func New(l *lexer.Lexer) *Parser {
 
 func (p *Parser) Errors() []string {
 	return p.errors
+}
+
+func (p *Parser) registerPrefix(tt token.Type, fn prefixParseFn) {
+	p.prefixParseFns[tt] = fn
+}
+
+func (p *Parser) registerInfix(tt token.Type, fn infixParseFn) {
+	p.infixParseFns[tt] = fn
 }
 
 func (p *Parser) nextToken() {
@@ -53,7 +81,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -110,4 +138,26 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	}
 
 	return st
+}
+
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.curTok}
+	stmt.Expression = p.parseExpression(LOWEST)
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+	return stmt
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix, ok := p.prefixParseFns[p.curTok.Type]
+	if !ok {
+		return nil
+	}
+	leftExp := prefix()
+	return leftExp
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
 }
