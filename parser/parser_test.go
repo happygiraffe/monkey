@@ -139,9 +139,57 @@ func TestIntegerLiteralExpression(t *testing.T) {
 		t.Fatalf("stmt.Expression is a %T, want *ast.IntegerLiteral", stmt.Expression)
 	}
 	if got, want := intLit.Value, int64(5); got != want {
-		t.Errorf("intLit.Value = %q, want %q", got, want)
+		t.Errorf("intLit.Value = %d, want %d", got, want)
 	}
 	if got, want := intLit.TokenLiteral(), "5"; got != want {
 		t.Errorf("intLit.TokenLiteral() = %q, want %q", got, want)
 	}
+}
+
+func TestParsingPrefixExpressions(t *testing.T) {
+	tests := []struct {
+		input, wantOp string
+		wantInt       int64
+	}{
+		{"!5;", "!", 5},
+		{"-15;", "-", 15},
+	}
+	for i, tc := range tests {
+		p := New(lexer.New(tc.input))
+		prog := p.Parse()
+		checkParseErrors(t, p) // TODO: should show input‥
+
+		if got, want := len(prog.Statements), 1; got != want {
+			t.Fatalf("%d. len(prog.Statements) = %d, want %d", i, got, want)
+		}
+
+		stmt, ok := prog.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("stmt is a %T, want *ast.ExpressionStatement", stmt)
+		}
+		exp, ok := stmt.Expression.(*ast.PrefixExpression)
+		if !ok {
+			t.Fatalf("stmt.Expression is a %T, want *ast.PrefixExpression", stmt.Expression)
+		}
+		if got, want := exp.Operator, tc.wantOp; got != want {
+			t.Errorf("exp.Operator = %q, want %q", got, want)
+		}
+		if err := testIntegerLiteral(exp.Right, tc.wantInt); err != nil {
+			t.Errorf("%d. IntegerLiteral(%q): %v", i, tc.input, err)
+		}
+	}
+}
+
+func testIntegerLiteral(exp ast.Expression, want int64) error {
+	il, ok := exp.(*ast.IntegerLiteral)
+	if !ok {
+		return fmt.Errorf("got a %T, want a *ast.IntegerLiteral")
+	}
+	if il.Value != want {
+		return fmt.Errorf("got value %d, want %d", il.Value, want)
+	}
+	if got, want := il.TokenLiteral(), fmt.Sprintf("%d", want); got != want {
+		return fmt.Errorf("got TokenLiteral() %q, want %q", got, want)
+	}
+	return nil
 }
