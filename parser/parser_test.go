@@ -134,15 +134,8 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	if !ok {
 		t.Fatalf("stmt is a %T, want *ast.ExpressionStatement", stmt)
 	}
-	intLit, ok := stmt.Expression.(*ast.IntegerLiteral)
-	if !ok {
-		t.Fatalf("stmt.Expression is a %T, want *ast.IntegerLiteral", stmt.Expression)
-	}
-	if got, want := intLit.Value, int64(5); got != want {
-		t.Errorf("intLit.Value = %d, want %d", got, want)
-	}
-	if got, want := intLit.TokenLiteral(), "5"; got != want {
-		t.Errorf("intLit.TokenLiteral() = %q, want %q", got, want)
+	if err := testIntegerLiteral(stmt.Expression, 5); err != nil {
+		t.Error(err)
 	}
 }
 
