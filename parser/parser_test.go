@@ -2,10 +2,12 @@ package parser
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"monkey/ast"
 	"monkey/lexer"
+	"monkey/token"
 )
 
 func TestLetStatements(t *testing.T) {
@@ -35,6 +37,30 @@ func TestLetStatements(t *testing.T) {
 		if err := testLetStatement(t, prog.Statements[i], tc.wantIdent); err != nil {
 			t.Fatalf("%d. testLetStatement: %v", i, err)
 		}
+	}
+
+	// TODO: finish parsing let expressions so we get values stored and can compare structs directly.
+	want := &ast.Program{
+		Statements: []ast.Statement{
+			&ast.LetStatement{
+				Token: token.Token{token.LET, "let"},
+				Name:  &ast.Identifier{Token: token.Token{token.IDENT, "x"}, Value: "x"},
+				Value: &ast.IntegerLiteral{Token: token.Token{token.INT, "5"}, Value: 5},
+			},
+			&ast.LetStatement{
+				Token: token.Token{token.LET, "let"},
+				Name:  &ast.Identifier{Token: token.Token{token.IDENT, "y"}, Value: "y"},
+				Value: &ast.IntegerLiteral{Token: token.Token{token.INT, "10"}, Value: 10},
+			},
+			&ast.LetStatement{
+				Token: token.Token{token.LET, "let"},
+				Name:  &ast.Identifier{Token: token.Token{token.IDENT, "foobar"}, Value: "foobar"},
+				Value: &ast.IntegerLiteral{Token: token.Token{token.INT, "836383"}, Value: 836383},
+			},
+		},
+	}
+	if !reflect.DeepEqual(prog, want) {
+		t.Logf("Parse(%q) =\n%v\nwant:\n%v", input, prog, want)
 	}
 }
 
