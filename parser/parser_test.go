@@ -193,8 +193,8 @@ func TestParsingPrefixExpressions(t *testing.T) {
 		if got, want := exp.Operator, tc.wantOp; got != want {
 			t.Errorf("exp.Operator = %q, want %q", got, want)
 		}
-		if err := testIntegerLiteral(exp.Right, tc.wantInt); err != nil {
-			t.Errorf("%d. IntegerLiteral(%q): %v", i, tc.input, err)
+		if err := testLiteralExpression(exp.Right, tc.wantInt); err != nil {
+			t.Errorf("%d. %q: Right: %v", i, tc.input, err)
 		}
 	}
 }
@@ -211,6 +211,33 @@ func testIntegerLiteral(exp ast.Expression, want int64) error {
 		return fmt.Errorf("got TokenLiteral() %q, want %q", got, want)
 	}
 	return nil
+}
+
+func testIdentifier(exp ast.Expression, want string) error {
+	ident, ok := exp.(*ast.Identifier)
+	if !ok {
+		return fmt.Errorf("got a %T, want a *ast.Identifier")
+	}
+	if ident.Value != want {
+		return fmt.Errorf("got value %q, want %q", ident.Value, want)
+	}
+	if got := ident.TokenLiteral(); got != want {
+		return fmt.Errorf("got TokenLiteral() %q, want %q", got, want)
+	}
+	return nil
+}
+
+func testLiteralExpression(exp ast.Expression, want interface{}) error {
+	switch v := want.(type) {
+	case int:
+		return testIntegerLiteral(exp, int64(v))
+	case int64:
+		return testIntegerLiteral(exp, v)
+	case string:
+		return testIdentifier(exp, v)
+	default:
+		return fmt.Errorf("type %T not handled (for %T)", want, exp)
+	}
 }
 
 func TestParsingInfixExpressions(t *testing.T) {
@@ -245,14 +272,14 @@ func TestParsingInfixExpressions(t *testing.T) {
 		if !ok {
 			t.Fatalf("stmt.Expression is a %T, want *ast.InfixExpression", stmt.Expression)
 		}
-		if err := testIntegerLiteral(exp.Left, tc.lval); err != nil {
-			t.Errorf("%d. IntegerLiteral(%q): %v", i, tc.input, err)
+		if err := testLiteralExpression(exp.Left, tc.lval); err != nil {
+			t.Errorf("%d. %q: Left: %v", i, tc.input, err)
 		}
 		if got, want := exp.Operator, tc.op; got != want {
 			t.Errorf("exp.Operator = %q, want %q", got, want)
 		}
-		if err := testIntegerLiteral(exp.Right, tc.rval); err != nil {
-			t.Errorf("%d. IntegerLiteral(%q): %v", i, tc.input, err)
+		if err := testLiteralExpression(exp.Right, tc.rval); err != nil {
+			t.Errorf("%d. %q: Right: %v", i, tc.input, err)
 		}
 	}
 }
