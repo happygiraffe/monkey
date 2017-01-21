@@ -193,3 +193,47 @@ func testIntegerLiteral(exp ast.Expression, want int64) error {
 	}
 	return nil
 }
+
+func TestParsingInfixExpressions(t *testing.T) {
+	tests := []struct {
+		input string
+		lval  int64
+		op    string
+		rval  int64
+	}{
+		{"5 + 5;", 5, "+", 5},
+		{"5 - 5;", 5, "-", 5},
+		{"5 * 5;", 5, "*", 5},
+		{"5 / 5;", 5, "/", 5},
+		{"5 > 5;", 5, ">", 5},
+		{"5 < 5;", 5, "<", 5},
+		{"5 == 5;", 5, "==", 5},
+		{"5 != 5;", 5, "!=", 5},
+	}
+	for i, tc := range tests {
+		p := New(lexer.New(tc.input))
+		prog := p.Parse()
+		checkParseErrors(t, p)
+		if got, want := len(prog.Statements), 1; got != want {
+			t.Fatalf("%d. len(prog.Statements) = %d, want %d", i, got, want)
+		}
+
+		stmt, ok := prog.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("stmt is a %T, want *ast.ExpressionStatement", stmt)
+		}
+		exp, ok := stmt.Expression.(*ast.InfixExpression)
+		if !ok {
+			t.Fatalf("stmt.Expression is a %T, want *ast.InfixExpression", stmt.Expression)
+		}
+		if err := testIntegerLiteral(exp.Left, tc.lval); err != nil {
+			t.Errorf("%d. IntegerLiteral(%q): %v", i, tc.input, err)
+		}
+		if got, want := exp.Operator, tc.op; got != want {
+			t.Errorf("exp.Operator = %q, want %q", got, want)
+		}
+		if err := testIntegerLiteral(exp.Right, tc.rval); err != nil {
+			t.Errorf("%d. IntegerLiteral(%q): %v", i, tc.input, err)
+		}
+	}
+}
