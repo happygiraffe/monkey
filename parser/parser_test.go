@@ -341,3 +341,130 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		}
 	}
 }
+
+func TestIfExpression(t *testing.T) {
+	input := `if (x < y) { x }`
+	p := New(lexer.New(input))
+	prog := p.Parse()
+	checkParseErrors(t, p)
+
+	if got, want := len(prog.Statements), 1; got != want {
+		t.Fatalf("Parse() got %d statements, want %d", got, want)
+	}
+
+	stmt, ok := prog.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt is a %T, want *ast.ExpressionStatement", stmt)
+	}
+
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression is a %t, want a *ast.IfExpression", stmt.Expression)
+	}
+
+	// Condition
+
+	if err := testInfixExpression(exp.Condition, "x", "<", "y"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Consequence
+
+	if got, want := len(exp.Consequence.Statements), 1; got != want {
+		t.Fatalf("exp.Consequence got %d statements, want %d", got, want)
+	}
+
+	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Consequence.Statements[0] is a %t, want a *ast.IfExpression", exp.Consequence.Statements[0])
+	}
+
+	if err := testIdentifier(consequence.Expression, "x"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Alternative
+
+	if exp.Alternative != nil {
+		t.Errorf("exp.Alternative = %v, want nil", exp.Alternative)
+	}
+}
+
+func TestIfElseExpression(t *testing.T) {
+	input := `if (x < y) { x } else { y }`
+	p := New(lexer.New(input))
+	prog := p.Parse()
+	checkParseErrors(t, p)
+
+	if got, want := len(prog.Statements), 1; got != want {
+		t.Fatalf("Parse() got %d statements, want %d", got, want)
+	}
+
+	stmt, ok := prog.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt is a %T, want *ast.ExpressionStatement", stmt)
+	}
+
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression is a %t, want a *ast.IfExpression", stmt.Expression)
+	}
+
+	// Condition
+
+	if err := testInfixExpression(exp.Condition, "x", "<", "y"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Consequence
+
+	if got, want := len(exp.Consequence.Statements), 1; got != want {
+		t.Fatalf("exp.Consequence got %d statements, want %d", got, want)
+	}
+
+	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Consequence.Statements[0] is a %t, want a *ast.IfExpression", exp.Consequence.Statements[0])
+	}
+
+	if err := testIdentifier(consequence.Expression, "x"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Alternative
+
+	if got, want := len(exp.Alternative.Statements), 1; got != want {
+		t.Fatalf("exp.Alternative got %d statements, want %d", got, want)
+	}
+
+	alt, ok := exp.Alternative.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Alternative.Statements[0] is a %t, want a *ast.IfExpression", exp.Alternative.Statements[0])
+	}
+
+	if err := testIdentifier(alt.Expression, "y"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testInfixExpression(exp ast.Expression, left interface{}, op string, right interface{}) error {
+
+	opExp, ok := exp.(*ast.InfixExpression)
+	if !ok {
+		return fmt.Errorf("exp is not ast.OperatorExpression. got=%T(%s)", exp, exp)
+	}
+
+	if err := testLiteralExpression(opExp.Left, left); err != nil {
+		return err
+	}
+
+	if opExp.Operator != op {
+		return fmt.Errorf("exp.Operator is not '%s'. got=%q", op, opExp.Operator)
+	}
+
+	if err := testLiteralExpression(opExp.Right, right); err != nil {
+		return err
+	}
+
+	return nil
+}
