@@ -448,7 +448,6 @@ func TestIfElseExpression(t *testing.T) {
 }
 
 func testInfixExpression(exp ast.Expression, left interface{}, op string, right interface{}) error {
-
 	opExp, ok := exp.(*ast.InfixExpression)
 	if !ok {
 		return fmt.Errorf("exp is not ast.OperatorExpression. got=%T(%s)", exp, exp)
@@ -467,4 +466,79 @@ func testInfixExpression(exp ast.Expression, left interface{}, op string, right 
 	}
 
 	return nil
+}
+
+func TestFunctionLiteralParsing(t *testing.T) {
+	input := `fn(x, y) { x + y; }`
+	p := New(lexer.New(input))
+	prog := p.Parse()
+	checkParseErrors(t, p)
+
+	if got, want := len(prog.Statements), 1; got != want {
+		t.Fatalf("got %d statements, want %d", got, want)
+	}
+
+	stmt, ok := prog.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("prog.Statements[0] is a %t, want a *ast.ExpressionStatement", prog.Statements[0])
+	}
+
+	fn, ok := stmt.Expression.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatal("stmt.Expression is a %t, want a *ast.FunctionLiteral", stmt.Expression)
+	}
+
+	// Parameters
+
+	if got, want := len(fn.Parameters), 2; got != want {
+		t.Fatalf("got %d parameters, want %d", got, want)
+	}
+
+	if err := testLiteralExpression(fn.Parameters[0], "x"); err != nil {
+		t.Fatal(err)
+	}
+	if err := testLiteralExpression(fn.Parameters[1], "y"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Body
+
+	if got, want := len(fn.Body.Statements), 1; got != want {
+		t.Fatalf("got %d body statements, want %d", got, want)
+	}
+
+	bodyStmt, ok := fn.Body.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("fn.Body.Statements[0 is a %T, want a *ast.ExpressionStatement", fn.Body.Statements[0])
+	}
+	if err := testInfixExpression(bodyStmt.Expression, "x", "+", "y"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestParseFunctionParameters(t *testing.T) {
+	tests := []struct {
+		input string
+		want  []string
+	}{
+		{"fn() {};", nil},
+		{"fn(x) {};", []string{"x"}},
+		{"fn(x, y, z) {};", []string{"x", "y", "z"}},
+	}
+	for _, tc := range tests {
+		p := New(lexer.New(tc.input))
+		prog := p.Parse()
+		checkParseErrors(t, p)
+		// Just let this blow up at runtime if wrong‥
+		stmt := prog.Statements[0].(*ast.ExpressionStatement)
+		fn := stmt.Expression.(*ast.FunctionLiteral)
+		if got, want := len(fn.Parameters), len(tc.want); got != want {
+			t.Fatalf("%q has %d params, want %d", tc.input, got, want)
+		}
+		for i, ident := range tc.want {
+			if err := testLiteralExpression(fn.Parameters[i], ident); err != nil {
+				t.Errorf("%q param[%d]: %v", tc.input, i, err)
+			}
+		}
+	}
 }
