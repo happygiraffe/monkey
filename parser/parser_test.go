@@ -218,7 +218,7 @@ func testIntegerLiteral(exp ast.Expression, want int64) error {
 func testIdentifier(exp ast.Expression, want string) error {
 	ident, ok := exp.(*ast.Identifier)
 	if !ok {
-		return fmt.Errorf("got a %T, want a *ast.Identifier")
+		return fmt.Errorf("got a %T, want a *ast.Identifier", exp)
 	}
 	if ident.Value != want {
 		return fmt.Errorf("got value %q, want %q", ident.Value, want)
@@ -330,6 +330,9 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"2 / (5 + 5)", "(2 / (5 + 5))"},
 		{"-(5 + 5)", "(-(5 + 5))"},
 		{"!(true == true)", "(!(true == true))"},
+		{"a + add(b * c) + d", "((a + add((b * c))) + d)"},
+		{"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"},
+		{"add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"},
 	}
 	for i, tc := range tests {
 		p := New(lexer.New(tc.input))
@@ -337,7 +340,7 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		checkParseErrors(t, p)
 
 		if got, want := prog.String(), tc.want; got != want {
-			t.Errorf("%d. Parse(%q) = %q, want %q", i, tc.input, got, want)
+			t.Errorf("%d. Parse(%q) = %q, want: %q", i, tc.input, got, want)
 		}
 	}
 }
@@ -540,5 +543,42 @@ func TestParseFunctionParameters(t *testing.T) {
 				t.Errorf("%q param[%d]: %v", tc.input, i, err)
 			}
 		}
+	}
+}
+
+func TestCallExpression(t *testing.T) {
+	input := `add(1, 2*3, 4+5);`
+	p := New(lexer.New(input))
+	prog := p.Parse()
+	checkParseErrors(t, p)
+	if got, want := len(prog.Statements), 1; got != want {
+		t.Fatalf("len(prog.Statements) = %d, want %d", got, want)
+	}
+
+	stmt, ok := prog.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("prog.Statements[0] is a %t, want a *ast.ExpressionStatement", prog.Statements[0])
+	}
+
+	ce, ok := stmt.Expression.(*ast.CallExpression)
+	if !ok {
+		t.Fatal("stmt.Expression is a %t, want a *ast.CallExpression", stmt.Expression)
+	}
+
+	if err := testIdentifier(ce.Function, "add"); err != nil {
+		t.Fatalf("function name: %v", err)
+	}
+
+	if got, want := len(ce.Arguments), 3; got != want {
+		t.Fatalf("len(ce.Arguments) = %d, want %d", got, want)
+	}
+	if err := testLiteralExpression(ce.Arguments[0], 1); err != nil {
+		t.Errorf("arg[0]: %v", err)
+	}
+	if err := testInfixExpression(ce.Arguments[1], 2, "*", 3); err != nil {
+		t.Errorf("arg[1]: %v", err)
+	}
+	if err := testInfixExpression(ce.Arguments[2], 4, "+", 5); err != nil {
+		t.Errorf("arg[2]: %v", err)
 	}
 }
