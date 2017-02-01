@@ -11,6 +11,34 @@ import (
 )
 
 func TestLetStatements(t *testing.T) {
+	tests := []struct {
+		input   string
+		wantID  string
+		wantVal interface{}
+	}{
+		{"let x = 5;", "x", 5},
+		{"let y = 10;", "y", 10},
+		{"let foobar = 836383;", "foobar", 836383},
+	}
+	for _, tc := range tests {
+		p := New(lexer.New(tc.input))
+		prog := p.Parse()
+		checkParseErrors(t, p)
+		if got, want := len(prog.Statements), 1; got != want {
+			t.Fatalf("len(prog.Statements) = %d, want %d", got, want)
+		}
+
+		stmt := prog.Statements[0]
+		if err := testLetStatement(t, stmt, tc.wantID); err != nil {
+			t.Errorf("%q: let statement: %v", tc.input, err)
+		}
+
+		val := stmt.(*ast.LetStatement).Value
+		if err := testLiteralExpression(val, tc.wantVal); err != nil {
+			t.Errorf("%q: value: %v", tc.input, err)
+		}
+	}
+
 	input := `
 		let x = 5;
 		let y = 10;
@@ -19,25 +47,6 @@ func TestLetStatements(t *testing.T) {
 	p := New(lexer.New(input))
 	prog := p.Parse()
 	checkParseErrors(t, p)
-	if prog == nil {
-		t.Fatal("Parse() returned nil")
-	}
-	if got, want := len(prog.Statements), 3; got != want {
-		t.Fatalf("Parse() got %d statements, want %d", got, want)
-	}
-
-	tests := []struct {
-		wantIdent string
-	}{
-		{"x"},
-		{"y"},
-		{"foobar"},
-	}
-	for i, tc := range tests {
-		if err := testLetStatement(t, prog.Statements[i], tc.wantIdent); err != nil {
-			t.Fatalf("%d. testLetStatement: %v", i, err)
-		}
-	}
 
 	// TODO: finish parsing let expressions so we get values stored and can compare structs directly.
 	want := &ast.Program{
@@ -95,26 +104,33 @@ func checkParseErrors(t *testing.T, p *Parser) {
 }
 
 func TestReturnStatements(t *testing.T) {
-	input := `
-    return 5;
-    return 10;
-	  return 993322;
-	`
-	l := lexer.New(input)
-	p := New(l)
-	prog := p.Parse()
-	checkParseErrors(t, p)
-	if got, want := len(prog.Statements), 3; got != want {
-		t.Fatalf("len(prog.Statements) = %d, want %d", got, want)
+	tests := []struct {
+		input   string
+		wantVal interface{}
+	}{
+		{"return 5;", 5},
+		{"return 10;", 10},
+		{"return 993322;", 993322},
 	}
-	for _, stmt := range prog.Statements {
+	for i, tc := range tests {
+		p := New(lexer.New(tc.input))
+		prog := p.Parse()
+		checkParseErrors(t, p)
+		if got, want := len(prog.Statements), 1; got != want {
+			t.Fatalf("len(prog.Statements) = %d, want %d", got, want)
+		}
+
+		stmt := prog.Statements[0]
 		retStmt, ok := stmt.(*ast.ReturnStatement)
 		if !ok {
-			t.Errorf("stmt is a %T, want *ast.ReturnStatement", stmt)
+			t.Errorf("%d. %q: stmt is a %T, want *ast.ReturnStatement", i, tc.input, stmt)
 			continue
 		}
 		if got, want := retStmt.TokenLiteral(), "return"; got != want {
-			t.Errorf("stmt.TokenLiteral() = %q, want %q", got, want)
+			t.Errorf("%d. %q: stmt.TokenLiteral() = %q, want %q", i, tc.input, got, want)
+		}
+		if err := testLiteralExpression(retStmt.ReturnValue, tc.wantVal); err != nil {
+			t.Errorf("%d. %q: stmt.ReturnValue: %v", i, tc.input, err)
 		}
 	}
 }
@@ -204,7 +220,7 @@ func TestParsingPrefixExpressions(t *testing.T) {
 func testIntegerLiteral(exp ast.Expression, want int64) error {
 	il, ok := exp.(*ast.IntegerLiteral)
 	if !ok {
-		return fmt.Errorf("got a %T, want a *ast.IntegerLiteral")
+		return fmt.Errorf("got a %T, want a *ast.IntegerLiteral", exp)
 	}
 	if il.Value != want {
 		return fmt.Errorf("got value %d, want %d", il.Value, want)
@@ -232,7 +248,7 @@ func testIdentifier(exp ast.Expression, want string) error {
 func testBooleanLiteral(exp ast.Expression, want bool) error {
 	bl, ok := exp.(*ast.Boolean)
 	if !ok {
-		return fmt.Errorf("got a %T, want a *ast.Boolean")
+		return fmt.Errorf("got a %T, want a *ast.Boolean", exp)
 	}
 	if bl.Value != want {
 		return fmt.Errorf("got value %d, want %d", bl.Value, want)
