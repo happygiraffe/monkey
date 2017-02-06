@@ -108,7 +108,7 @@ func (es *ExpressionStatement) String() string {
 	if es.Expression == nil { // XXX
 		return ""
 	}
-	return es.Expression.String()
+	return es.Expression.String() + ";"
 }
 
 type IntegerLiteral struct {
@@ -176,9 +176,12 @@ func (bs *BlockStatement) statementNode()       {}
 func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
 func (bs *BlockStatement) String() string {
 	var out bytes.Buffer
+	out.WriteString("{\n")
 	for _, s := range bs.Statements {
 		out.WriteString(s.String())
+		out.WriteString("\n")
 	}
+	out.WriteString("}")
 	return out.String()
 }
 
@@ -221,7 +224,7 @@ func (fl *FunctionLiteral) String() string {
 	out.WriteString(fl.TokenLiteral())
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
-	out.WriteString(" )")
+	out.WriteString(") ")
 	out.WriteString(fl.Body.String())
 	return out.String()
 }

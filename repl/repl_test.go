@@ -8,36 +8,24 @@ import (
 
 func TestRepl(t *testing.T) {
 	tests := []struct {
-		input string
-		want  []string
+		input     string
+		wantLines []string
 	}{
 		{
-			input: "1;",
-			want: []string{
-				`INT("1")`,
-				`;(";")`,
-			},
+			input:     "1;",
+			wantLines: []string{"1;"},
 		},
 		{
 			input: "let add = fn(x, y) { x + y; };",
-			want: []string{
-				`LET("let")`,
-				`IDENT("add")`,
-				`=("=")`,
-				`FUNCTION("fn")`,
-				`(("(")`,
-				`IDENT("x")`,
-				`,(",")`,
-				`IDENT("y")`,
-				`)(")")`,
-				`{("{")`,
-				`IDENT("x")`,
-				`+("+")`,
-				`IDENT("y")`,
-				`;(";")`,
-				`}("}")`,
-				`;(";")`,
+			wantLines: []string{
+				"let add = fn(x, y) {",
+				"(x + y);",
+				"};",
 			},
+		},
+		{
+			input: "let y 5 9;",
+			wantLines: []string{`	expected token =, got token INT ("5")`},
 		},
 	}
 	for i, tc := range tests {
@@ -45,8 +33,7 @@ func TestRepl(t *testing.T) {
 		var out bytes.Buffer
 		Start(in, &out)
 
-		want := strings.Join(tc.want, "\n") + "\n"
-		want = Prompt + want + Prompt
+		want := Prompt + strings.Join(tc.wantLines, "\n") + "\n" + Prompt
 		if got := out.String(); got != want {
 			t.Errorf("%d. Start(%q) =\n%q\n, want\n%q", i, tc.input, got, want)
 		}
